@@ -1,5 +1,17 @@
-const arr = [1,2,3,4,5]
-for(let i of arr) {
-    console.log(i)
+import { createElement, Component, render } from './toyReact'
+
+class MyComponent extends Component {
+    render() {
+        return (
+            <div>
+                <h1>my component</h1>
+                {this.children}
+            </div>
+        )
+    }
 }
-const a = <div/>
+render(<MyComponent id="dom-id" class="cls-op">
+    <div>xxx</div>
+    <div>bc</div>
+    <div></div>
+  </MyComponent>, document.body)
