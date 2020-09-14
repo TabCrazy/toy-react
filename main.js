@@ -14,4 +14,4 @@ render(<MyComponent id="dom-id" class="cls-op">
     <div>xxx</div>
     <div>bc</div>
     <div></div>
-  </MyComponent>, document.body)
+  </MyComponent>, document.getElementById('app'))
