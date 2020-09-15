@@ -7,7 +7,17 @@ class ElementWrapper {
         this.root = document.createElement(type)
     }
     setAttribute(name, value) {
-        this.root.setAttribute(name, value)
+        if (name.match(/^on([\s\S]+)$/)) {
+            // 事件处理
+            const event = RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase())
+            this.root.addEventListener(event, value)
+        } else if(name === 'className') {
+            // class类名处理
+            this.root.setAttribute('class', value)
+        } else {
+            // 普通属性处理
+            this.root.setAttribute(name, value)
+        }
     }
     appendChild(component) {
         const range = document.createRange()
@@ -15,7 +25,7 @@ class ElementWrapper {
         range.setEnd(this.root, this.root.childNodes.length)
         range.deleteContents()
         component[RENDER_TO_DOM](range)
-        this.root.appendChild(component.root)
+        // this.root.appendChild(component.root)
     }
     [RENDER_TO_DOM](range) {
         range.deleteContents()
@@ -58,9 +68,33 @@ export class Component {
     }
     // 重新绘制
     rerender() {
-        range.deleteContents()
-        this[RENDER_TO_DOM](this._range)
+        let oldRange = this._range
+		let range = document.createRange()
+		range.setStart(oldRange.startContainer, oldRange.startOffset)
+		range.setEnd(oldRange.startContainer, oldRange.startOffset)
+		this[RENDER_TO_DOM](range)
+
+		oldRange.setStart(range.endContainer, range.endOffset)
+		oldRange.deleteContents()
     }
+    setState(newState) {
+        if (this.state === null || typeof this.state !== 'object') {
+            this.state = newState
+            this.rerender()
+            return
+        }
+		let merge = (oldState, newState) => {
+			for (let i in newState) {
+				if (oldState[i] === null || typeof oldState[i] !== "object") {
+					oldState[i] = newState[i]
+				} else {
+					merge(oldState[i], newState[i])
+				}
+			}
+		}
+		merge(this.state, newState)
+		this.rerender()
+	}
     // get root () {
     //     if (!this._root) {
     //         this._root = this.render().root
@@ -83,13 +117,16 @@ export function createElement(type, attributes, ...children) {
     }
     // 属性节点处理
     for (let attribute in attributes) {
-        el.setAttribute(attributes[attribute])
+        el.setAttribute(attribute, attributes[attribute])
     }
     // 子节点处理
     let insertChildren = (children) => {
         for (let child of children) {
             if (typeof child === "string") {
                 child = new TextWrapper(child)
+            }
+            if (child === null) {
+                continue
             }
             // 对 {this.children} 处理
             if (typeof child === "object" && child instanceof Array) {
