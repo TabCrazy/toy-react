@@ -146,4 +146,6 @@ function calculateWinner(squares) {
 	return null;
 }
 
-render(<Game />, document.getElementById('app'))
+// render(<Game />, document.getElementById('app'))
+let game = <Game />
+console.log(game.vdom)

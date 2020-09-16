@@ -1,50 +1,5 @@
 const RENDER_TO_DOM = Symbol('render ot dom')
 /**
- * Dom节点处理
- */
-class ElementWrapper {
-    constructor(type) {
-        this.root = document.createElement(type)
-    }
-    setAttribute(name, value) {
-        if (name.match(/^on([\s\S]+)$/)) {
-            // 事件处理
-            const event = RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase())
-            this.root.addEventListener(event, value)
-        } else if(name === 'className') {
-            // class类名处理
-            this.root.setAttribute('class', value)
-        } else {
-            // 普通属性处理
-            this.root.setAttribute(name, value)
-        }
-    }
-    appendChild(component) {
-        const range = document.createRange()
-        range.setStart(this.root, this.root.childNodes.length)
-        range.setEnd(this.root, this.root.childNodes.length)
-        range.deleteContents()
-        component[RENDER_TO_DOM](range)
-        // this.root.appendChild(component.root)
-    }
-    [RENDER_TO_DOM](range) {
-        range.deleteContents()
-        range.insertNode(this.root)
-    }
-}
-/**
- * 文本节点处理
- */
-class TextWrapper {
-    constructor(content) {
-        this.root = document.createTextNode(content)
-    }
-    [RENDER_TO_DOM](range) {
-        range.deleteContents()
-        range.insertNode(this.root)
-    }
-}
-/**
  * Comonpent 实现
  */
 export class Component {
@@ -60,6 +15,9 @@ export class Component {
     }
     appendChild(component) {
         this.children.push(component)
+    }
+    get vdom() {
+        return this.render().vdom
     }
     // render dom 方法
     [RENDER_TO_DOM](range) {
@@ -102,6 +60,70 @@ export class Component {
     //     return this._root
     // }
 }
+
+/**
+ * Dom节点处理
+ */
+class ElementWrapper extends Component {
+    constructor(type) {
+        super(type)
+        this.type = type
+        this.root = document.createElement(type)
+    }
+    // setAttribute(name, value) {
+    //     if (name.match(/^on([\s\S]+)$/)) {
+    //         // 事件处理
+    //         const event = RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase())
+    //         this.root.addEventListener(event, value)
+    //     } else if(name === 'className') {
+    //         // class类名处理
+    //         this.root.setAttribute('class', value)
+    //     } else {
+    //         // 普通属性处理
+    //         this.root.setAttribute(name, value)
+    //     }
+    // }
+    // appendChild(component) {
+    //     const range = document.createRange()
+    //     range.setStart(this.root, this.root.childNodes.length)
+    //     range.setEnd(this.root, this.root.childNodes.length)
+    //     range.deleteContents()
+    //     component[RENDER_TO_DOM](range)
+    //     // this.root.appendChild(component.root)
+    // }
+    get vdom() {
+        return {
+            type: this.type,
+            props: this.props,
+            children: this.children.map(child => child.vdom)
+        }
+    }
+    [RENDER_TO_DOM](range) {
+        range.deleteContents()
+        range.insertNode(this.root)
+    }
+}
+/**
+ * 文本节点处理
+ */
+class TextWrapper extends Component {
+    constructor(content) {
+        super(content)
+        this.content = content
+        this.root = document.createTextNode(content)
+    }
+    get vdom () {
+        return {
+            type: "#text",
+            content: this.content
+        }
+    }
+    [RENDER_TO_DOM](range) {
+        range.deleteContents()
+        range.insertNode(this.root)
+    }
+}
+
 /**
  * 节点创建
  * @param {*} type 类型
